@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique // e.g., SUPER_ADMIN, ADMIN, MODERATOR, USER
+  description String?
+  permissions Permission[] @relation("RolePermissions")
+  users       User[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  action      String   @unique // e.g., create:user, read:workout
+  description String?
+  roles       Role[]   @relation("RolePermissions")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  password       String
+  firstName      String?
+  lastName       String?
+  isActive       Boolean         @default(true)
+  isVerified     Boolean         @default(false)
+  roleId         String
+  role           Role            @relation(fields: [roleId], references: [id])
+  refreshTokens  RefreshToken[]
+  sessions       Session[]
+  profile        UserProfile?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device    String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  height        Float?   // in cm
+  weight        Float?   // in kg
+  goalWeight    Float?   // in kg
+  smokingStatus String?  // e.g., NON_SMOKER, ACTIVE_SMOKER, QUITTING
+  activityLevel String?  // e.g., SEDENTARY, LIGHT, MODERATE, ACTIVE, VERY_ACTIVE
+  bmi           Float?
+  tdee          Float?
+  healthGoal    String?  // e.g., BULKING, CUTTING, MAINTENANCE
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
