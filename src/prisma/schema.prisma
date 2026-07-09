@@ -1,0 +1,68 @@
+enum Role {
+  USER
+  COACH
+  ADMIN
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  
+  // Gunakan @map("password") agar di TypeScript kita bisa pakai nama 'passwordHash' 
+  // tanpa harus mengubah nama kolom 'password' yang sudah ada di database Anda
+  passwordHash  String    @map("password") 
+  
+  role          Role      @default(USER)
+  isVerified    Boolean   @default(false)
+  
+  // Relasi
+  profile       Profile?
+  tokens        Token[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // field lain sesuai kebutuhanmu, misalnya:
+  fullName  String?
+  avatarUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model Token {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token       String    @unique
+  type        TokenType
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, type])
+  @@map("tokens")
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
